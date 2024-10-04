@@ -67,17 +67,27 @@ void send_response(int socket, const char *response) {
 
 void handle_request(int new_socket) {
     char buffer[BUFFER_SIZE] = {0};
-    const char *http_response = 
-        "HTTP/1.1 200 OK\n"
-        "Content-Type: text/html\n"
-        "Content-Length: 39\n\n"
-        "<html><body>Hello, World!</body></html>";
-
+    char *request_line, *method, *uri;
+    
     read(new_socket, buffer, BUFFER_SIZE);
     printf("Received request:\n%s\n", buffer);
 
-    if (strncmp(buffer, "GET", 3) == 0) {
-        send_response(new_socket, http_response);
+    // Get the first line of the HTTP request (request line)
+    request_line = strtok(buffer, "\r\n");
+
+    // Parse the method (GET) and URI (e.g., "/")
+    method = strtok(request_line, " ");
+    uri = strtok(NULL, " ");
+
+    if (strncmp(method, "GET", 3) == 0) {
+        if (strcmp(uri, "/") == 0) {
+            send_response(new_socket, "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: 39\n\n<html><body>Welcome to Home Page</body></html>");
+        } else if (strcmp(uri, "/about") == 0) {
+            send_response(new_socket, "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: 44\n\n<html><body>About Us Page: We do cool stuff!</body></html>");
+        } else {
+            // For any other route, send a 404 Not Found response
+            send_response(new_socket, "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 45\n\n<html><body>404 - Page Not Found!</body></html>");
+        }
     } else {
         printf("Non-GET request received, not handling.\n");
     }
