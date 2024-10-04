@@ -5,12 +5,13 @@
 #include <arpa/inet.h>
 
 #define PORT 8080
+#define BUFFER_SIZE 30000
 
-int main() {
-    int server_fd, new_socket;
+// Function to create and bind the server socket
+int create_server_socket() {
+    int server_fd;
     struct sockaddr_in address;
     int opt = 1;
-    int addrlen = sizeof(address);
 
     // Create socket file descriptor
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
@@ -45,19 +46,58 @@ int main() {
     }
 
     printf("Server is listening on port %d\n", PORT);
+    return server_fd;
+}
 
-    // Accept incoming connection (blocking call)
-    if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0) {
+// Function to accept an incoming connection
+int accept_connection(int server_fd, struct sockaddr_in *address, int *addrlen) {
+    int new_socket;
+    if ((new_socket = accept(server_fd, (struct sockaddr *)address, (socklen_t*)addrlen)) < 0) {
         perror("accept failed");
-        close(server_fd);
         exit(EXIT_FAILURE);
     }
+    printf("Connection established\n");
+    return new_socket;
+}
 
-    // Connection accepted successfully
-    printf("Connection established with client\n");
+void send_response(int socket, const char *response) {
+    write(socket, response, strlen(response));
+    printf("Response sent\n");
+}
 
-    // Cleanup: close the sockets when done (in a real server, you may handle this more gracefully)
+void handle_request(int new_socket) {
+    char buffer[BUFFER_SIZE] = {0};
+    const char *http_response = 
+        "HTTP/1.1 200 OK\n"
+        "Content-Type: text/html\n"
+        "Content-Length: 39\n\n"
+        "<html><body>Hello, World!</body></html>";
+
+    read(new_socket, buffer, BUFFER_SIZE);
+    printf("Received request:\n%s\n", buffer);
+
+    if (strncmp(buffer, "GET", 3) == 0) {
+        send_response(new_socket, http_response);
+    } else {
+        printf("Non-GET request received, not handling.\n");
+    }
+
     close(new_socket);
+}
+
+int main() {
+    int server_fd, new_socket;
+    struct sockaddr_in address;
+    int addrlen = sizeof(address);
+
+    server_fd = create_server_socket();
+
+    while (1) {
+        new_socket = accept_connection(server_fd, &address, &addrlen);
+
+        handle_request(new_socket);
+    }
+
     close(server_fd);
 
     return 0;
