@@ -1,9 +1,9 @@
 #include "count_handler.h"
 #include "server.h"
+#include "config.h"
 #include <stdio.h>
 #include <sys/time.h>
 #include <string.h>
-#include "config.h"
 
 void handle_count_addition(int new_socket, int num) {
     struct timeval start, end;

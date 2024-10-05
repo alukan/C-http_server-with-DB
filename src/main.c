@@ -1,6 +1,7 @@
 #include "server.h"
 #include "request_handler.h"
 #include "config.h"
+#include "db.h"
 #include <stdio.h>
 #include <unistd.h>
 
@@ -8,6 +9,7 @@
 
 int main() {
     load_config();
+    init_mongo_connection();
     int server_fd, new_socket;
     struct sockaddr_in address;
     int addrlen = sizeof(address);

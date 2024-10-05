@@ -29,6 +29,7 @@ set(SOURCES
     src/count_handler.c
     src/request_handler.c
     src/config.c
+    src/db.c
 )
 
 # Add the executable target
@@ -41,3 +42,12 @@ include_directories(${source_dir})
 # Add dotenv.c to the project
 add_dependencies(${PROJECT_NAME} dotenv-c)
 target_sources(${PROJECT_NAME} PRIVATE ${source_dir}/src/dotenv.c)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(MONGOC REQUIRED libmongoc-1.0)
+pkg_check_modules(BSONC REQUIRED libbson-1.0)
+
+include_directories(${MONGOC_INCLUDE_DIRS})
+link_directories(${MONGOC_LIBRARY_DIRS})
+
+target_link_libraries(${PROJECT_NAME} ${MONGOC_LIBRARIES} ${BSONC_LIBRARIES})
