@@ -6,6 +6,7 @@
 
 #define PORT 8080
 #define BUFFER_SIZE 30000
+#define BODY_SIZE 20000  // Adjusted size for the response body
 
 // Function to create and bind the server socket
 int create_server_socket() {
@@ -65,31 +66,99 @@ void send_response(int socket, const char *response) {
     printf("Response sent\n");
 }
 
+void print_buffer_debug(const char *buffer, int length) {
+    printf("Buffer content (with control characters):\n");
+    for (int i = 0; i < length; i++) {
+        // Check for control characters and print them in a readable format
+        if (buffer[i] == '\r') {
+            printf("\\r");  // Print \r as \\r
+        } else if (buffer[i] == '\n') {
+            printf("\\n");  // Print \n as \\n
+        } else if (buffer[i] == '\t') {
+            printf("\\t");  // Print tab as \\t
+        } else if (buffer[i] >= 32 && buffer[i] <= 126) {
+            printf("%c", buffer[i]);  // Print printable ASCII characters as-is
+        } else {
+            printf("\\x%02x", (unsigned char)buffer[i]);  // Print other non-printable characters as hex
+        }
+    }
+    printf("\n");
+}
+
+
 void handle_request(int new_socket) {
     char buffer[BUFFER_SIZE] = {0};
     char *request_line, *method, *uri;
-    
-    read(new_socket, buffer, BUFFER_SIZE);
-    printf("Received request:\n%s\n", buffer);
+    int content_length = 0;
+    char *body = NULL;
 
+    read(new_socket, buffer, BUFFER_SIZE);
     // Get the first line of the HTTP request (request line)
     request_line = strtok(buffer, "\r\n");
+    // Save where non-changed (after null terminator created by strtok) part of buffer starts
+    char *non_processed_buffer = buffer + strlen(request_line) + 1;  // +1 for the null terminator
 
     // Parse the method (GET) and URI (e.g., "/")
     method = strtok(request_line, " ");
     uri = strtok(NULL, " ");
+    if (method == NULL || uri == NULL) {
+        printf("Error: Could not parse method or URI from request line.\n");
+        close(new_socket);
+        return;
+    }
+    printf("Method: %s\n", method);
+    printf("URI: %s\n", uri);
 
-    if (strncmp(method, "GET", 3) == 0) {
+    if (strcmp(method, "GET") == 0) {
         if (strcmp(uri, "/") == 0) {
             send_response(new_socket, "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: 39\n\n<html><body>Welcome to Home Page</body></html>");
         } else if (strcmp(uri, "/about") == 0) {
             send_response(new_socket, "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: 44\n\n<html><body>About Us Page: We do cool stuff!</body></html>");
         } else {
-            // For any other route, send a 404 Not Found response
             send_response(new_socket, "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 45\n\n<html><body>404 - Page Not Found!</body></html>");
         }
+    } else if (strcmp(method, "POST") == 0) {
+        char *content_length_header = strstr(non_processed_buffer, "Content-Length:");
+        if (content_length_header != NULL) {
+            content_length = atoi(content_length_header + 15);  // 15 is the length of "Content-Length:"
+            printf("Content-Length: %d\n", content_length);
+        }
+
+        // we know that header end is after content_length_header
+        char *headers_end = strstr(content_length_header, "\r\n\r\n");
+        if (headers_end == NULL) {
+            printf("Error: Could not find the end of headers.\n");
+            close(new_socket);
+            return;
+        }
+        // Move past "\r\n\r\n" to the body
+        body = headers_end + 4;
+        
+        if (body != NULL && content_length > 0) {
+            printf("POST body: %s\n", body);
+
+            // Respond with the received body
+            char response_body[BODY_SIZE];
+            snprintf(response_body, sizeof(response_body),
+                     "<html><body>POST data received: %s</body></html>", body);
+
+            // Prepare and send the HTTP response
+            char response_header[BUFFER_SIZE];
+            snprintf(response_header, sizeof(response_header),
+                     "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: %lu\n\n%s",
+                     strlen(response_body), response_body);
+
+            send_response(new_socket, response_header);
+        } else {
+            char error_response[BUFFER_SIZE];
+            snprintf(error_response, sizeof(error_response),
+                     "HTTP/1.1 500 Internal Server Error\nContent-Type: text/html\nContent-Length: %lu\n\n<html><body>500 Internal Server Error: Body not found.</body></html>",
+                     strlen("<html><body>500 Internal Server Error: Body not found.</body></html>"));
+            send_response(new_socket, error_response);
+        }
     } else {
-        printf("Non-GET request received, not handling.\n");
+        // If it's not a GET or POST request, ignore it for now
+        printf("Unsupported method received: %s\n", method);
     }
 
     close(new_socket);
