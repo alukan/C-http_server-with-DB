@@ -1,4 +1,5 @@
 #include "request_handler.h"
+#include "config.h"
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -31,11 +32,11 @@ void root_post_handler(int new_socket, char *non_processed_buffer) {
         printf("POST body: %s\n", body);
 
         // Respond with the received body
-        char response_body[BODY_SIZE];
+        char response_body[get_body_size()];
         snprintf(response_body, sizeof(response_body),
                  "POST data received: %s", body);
 
-        char response_header[BUFFER_SIZE];
+        char response_header[get_buffer_size()];
         snprintf(response_header, sizeof(response_header),
                  "HTTP/1.1 200 OK\nContent-Type: text\nContent-Length: %lu\n\n%s",
                  strlen(response_body), response_body);
@@ -43,7 +44,7 @@ void root_post_handler(int new_socket, char *non_processed_buffer) {
         send_response(new_socket, response_header);
     }
     else {
-        char error_response[BUFFER_SIZE];
+        char error_response[get_buffer_size()];
         snprintf(error_response, sizeof(error_response),
                  "HTTP/1.1 500 Internal Server Error\nContent-Type: text/html\nContent-Length: %lu\n\n<html><body>500 Internal Server Error: Body not found.</body></html>",
                  strlen("<html><body>500 Internal Server Error: Body not found.</body></html>"));
@@ -75,11 +76,11 @@ void send_response(int socket, const char *response) {
 
 // Function to handle incoming requests (GET, POST)
 void handle_request(int new_socket) {
-    char buffer[BUFFER_SIZE] = {0};
+    char buffer[get_buffer_size()];
     char *request_line, *method, *uri;
 
     // Read the incoming request
-    read(new_socket, buffer, BUFFER_SIZE);
+    read(new_socket, buffer, get_buffer_size());
     // Get the first line of the HTTP request (request line)
     request_line = strtok(buffer, "\r\n");
     // Save where non-changed (after null terminator created by strtok) part of buffer starts

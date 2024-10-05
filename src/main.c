@@ -1,11 +1,13 @@
 #include "server.h"
 #include "request_handler.h"
+#include "config.h"
 #include <stdio.h>
 #include <unistd.h>
 
 #define PORT 8080
 
 int main() {
+    load_config();
     int server_fd, new_socket;
     struct sockaddr_in address;
     int addrlen = sizeof(address);
