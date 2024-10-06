@@ -55,8 +55,14 @@ target_sources(${PROJECT_NAME} PRIVATE
 
 # macOS-specific configurations
 if(APPLE)
-    # If MongoDB libraries are installed via brew, adjust pkg-config path
-    set(ENV{PKG_CONFIG_PATH} "/usr/local/opt/libmongoc/lib/pkgconfig:/usr/local/opt/libbson/lib/pkgconfig:/opt/homebrew/lib/pkgconfig")
+    # Check if the /opt/homebrew directory exists (Apple Silicon M1/M2)
+    if(EXISTS "/opt/homebrew")
+        # This is an M1 or M2 (Apple Silicon) Mac
+        set(ENV{PKG_CONFIG_PATH} "/opt/homebrew/opt/libmongoc/lib/pkgconfig:/opt/homebrew/opt/libbson/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+    else()
+        # This is an Intel Mac
+        set(ENV{PKG_CONFIG_PATH} "/usr/local/opt/libmongoc/lib/pkgconfig:/usr/local/opt/libbson/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+    endif()
 endif()
 
 # Find and link MongoDB libraries (libmongoc and libbson)
