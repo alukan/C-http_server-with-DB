@@ -57,12 +57,14 @@ target_sources(${PROJECT_NAME} PRIVATE
 if(APPLE)
     # Check if the /opt/homebrew directory exists (Apple Silicon M1/M2)
     if(EXISTS "/opt/homebrew")
-        # This is an M1 or M2 (Apple Silicon) Mac
         set(ENV{PKG_CONFIG_PATH} "/opt/homebrew/opt/libmongoc/lib/pkgconfig:/opt/homebrew/opt/libbson/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
     else()
-        # This is an Intel Mac
         set(ENV{PKG_CONFIG_PATH} "/usr/local/opt/libmongoc/lib/pkgconfig:/usr/local/opt/libbson/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
     endif()
+    # Append the specific .dylib files based on the pkg-config paths
+    set(MONGOC_LIB "${MONGOC_LIBRARY_DIRS}/libmongoc-1.0.dylib")
+    set(BSONC_LIB "${BSONC_LIBRARY_DIRS}/libbson-1.0.dylib")
+
 endif()
 
 # Find and link MongoDB libraries (libmongoc and libbson)
@@ -71,7 +73,15 @@ pkg_check_modules(MONGOC REQUIRED libmongoc-1.0)
 pkg_check_modules(BSONC REQUIRED libbson-1.0)
 
 include_directories(${MONGOC_INCLUDE_DIRS})
-link_directories(${MONGOC_LIBRARY_DIRS})
+if (APPLE)
+    # Include the directories from pkg-config for headers
+    include_directories(${MONGOC_INCLUDE_DIRS})
 
-# Link MongoDB, BSON, dotenv-c, and cJSON libraries
-target_link_libraries(${PROJECT_NAME} ${MONGOC_LIBRARIES} ${BSONC_LIBRARIES} cjson)
+    # Link MongoDB, BSON, dotenv-c, and cJSON libraries
+    target_link_libraries(${PROJECT_NAME} ${MONGOC_LIB} ${BSONC_LIB} cjson)
+else()
+    link_directories(${MONGOC_LIBRARY_DIRS})
+
+    # Link MongoDB, BSON, dotenv-c, and cJSON libraries
+    target_link_libraries(${PROJECT_NAME} ${MONGOC_LIBRARIES} ${BSONC_LIBRARIES} cjson)
+endif()
