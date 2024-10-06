@@ -53,6 +53,12 @@ target_sources(${PROJECT_NAME} PRIVATE
     ${dotenv-c_SOURCE_DIR}/src/dotenv.c
 )
 
+# macOS-specific configurations
+if(APPLE)
+    # If MongoDB libraries are installed via brew, adjust pkg-config path
+    set(ENV{PKG_CONFIG_PATH} "/usr/local/opt/libmongoc/lib/pkgconfig:/usr/local/opt/libbson/lib/pkgconfig:/opt/homebrew/lib/pkgconfig")
+endif()
+
 # Find and link MongoDB libraries (libmongoc and libbson)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(MONGOC REQUIRED libmongoc-1.0)

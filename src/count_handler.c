@@ -1,6 +1,4 @@
 #include "count_handler.h"
-#include "server.h"
-#include "config.h"
 #include <stdio.h>
 #include <sys/time.h>
 #include <string.h>
