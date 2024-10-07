@@ -155,3 +155,50 @@ int delete_file(const char *name) {
 
     return 1; // Success
 }
+
+char* get_file(const char *name) {
+    if (client == NULL) {
+        init_mongo_connection();
+        if (client == NULL) {
+            return NULL;  // Failed to initialize connection
+        }
+    }
+
+    mongoc_collection_t *collection;
+    bson_t *query;
+    mongoc_cursor_t *cursor;
+    const bson_t *doc;
+    bson_error_t error;
+    char *result = NULL;
+
+    collection = mongoc_client_get_collection(client, db_name, "files");
+
+    query = bson_new();
+    BSON_APPEND_UTF8(query, "name", name);
+
+    cursor = mongoc_collection_find_with_opts(collection, query, NULL, NULL);
+
+    if (mongoc_cursor_error(cursor, &error)) {
+        fprintf(stderr, "Cursor error: %s\n", error.message);
+        bson_destroy(query);
+        mongoc_cursor_destroy(cursor);
+        mongoc_collection_destroy(collection);
+        return NULL;
+    }
+
+    if (mongoc_cursor_next(cursor, &doc)) {
+        result = bson_as_json(doc, NULL);
+    } else {
+        printf("No file found with the name: %s\n", name);
+        bson_destroy(query);
+        mongoc_cursor_destroy(cursor);
+        mongoc_collection_destroy(collection);
+        return NULL;
+    }
+
+    bson_destroy(query);
+    mongoc_cursor_destroy(cursor);
+    mongoc_collection_destroy(collection);
+
+    return result;
+}

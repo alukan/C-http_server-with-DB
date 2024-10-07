@@ -62,6 +62,15 @@ void handle_request(int new_socket) {
         else if (strcmp(uri, "/about") == 0) {
             send_response(new_socket, "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: 44\n\n<html><body>About Us Page: We do cool stuff!</body></html>");
         }
+        else if(strstr(uri, "/file/") != NULL) {
+            char *file_name = extract_param_from_uri(uri, "/file/", NULL);
+            if (file_name == NULL) {
+                    send_response(new_socket, "HTTP/1.1 400 Bad Request\nContent-Type: text/plain\nContent-Length: 18\n\nInvalid file name.");
+                    close(new_socket);
+                    return;
+                }
+            file_get_handler(new_socket, file_name);
+        }
         else if (strstr(uri, "/count/") != NULL) {
             char *num_str;
             if (strstr(uri, "/addition") != NULL) {
@@ -100,7 +109,7 @@ void handle_request(int new_socket) {
             send_response(new_socket, "HTTP/1.1 404 Not Found\nContent-Type: text/plain\nContent-Length: 16\n\nEndpoint not found.");
         }
     }
-    else if(strcmp(method, "UPDATE") == 0) {
+    else if(strcmp(method, "PUT") == 0) {
         if(strcmp(uri, "/file") == 0) {
             file_update_handler(new_socket, non_processed_buffer);
         }

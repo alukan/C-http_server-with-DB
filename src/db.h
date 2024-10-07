@@ -8,5 +8,6 @@ void cleanup_mongo_connection(mongoc_client_t *client);
 int save_file(const char *name, const char *content);
 int update_file(const char *name, const char *new_content);
 int delete_file(const char *name);
+char* get_file(const char *name);
 
 #endif
