@@ -73,8 +73,17 @@ void file_delete_handler(int new_socket, const char *name) {
 
 void file_get_handler(int new_socket, const char *name) {
     char *file_content = get_file(name);
-    if (file_content!= NULL) {
-        send_response(new_socket, ("HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: %d\n\n%s", strlen(file_content), file_content));
+    char response[1024];
+    snprintf(response, sizeof(response),
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: application/json\r\n"
+        "Content-Length: %lu\r\n"
+        "\r\n"
+        "%s",
+        strlen(file_content), file_content);
+
+    if (file_content != NULL) {
+        send_response(new_socket, response);
     } else {
         send_response(new_socket, "HTTP/1.1 404 Not Found\nContent-Type: text/plain\nContent-Length: 19\n\nFile not found.");
     }
