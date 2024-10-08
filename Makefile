@@ -3,6 +3,9 @@
 
 all: build
 
+run:
+	./build/bin/ServerApp
+
 build:
 	mkdir -p build
 	cd build && cmake .. && cmake --build .

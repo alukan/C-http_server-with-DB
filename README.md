@@ -13,7 +13,7 @@
 `make`
 
 # run
-`./build/bin/ServerApp`
+`make run`
 
 # what it can do
 
