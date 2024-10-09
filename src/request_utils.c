@@ -10,22 +10,20 @@ int extract_body_from_request(char *non_processed_buffer, char **body) {
     char *headers_end = strstr(non_processed_buffer, "\r\n\r\n");
     if (headers_end == NULL) {
         printf("Error: Could not find the end of headers.\n");
-        return -1; // Error: End of headers not found
+        return -1;
     }
 
     // The body starts after the "\r\n\r\n"
     *body = headers_end + 4;
 
-    // Return success if body and content length are found
     if (*body != NULL) {
-        return 0; // Success
+        return 0;
     }
     else{
-        return -1; // Error: Body not found
+        return -1;
     }
 }
 
-// Function to send an HTTP response
 void send_response(int socket, const char *response) {
     write(socket, response, strlen(response));
     printf("Response sent\n");
